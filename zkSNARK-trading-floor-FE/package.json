@@ -1,0 +1,34 @@
+{
+  "name": "miniblockchainfe",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 8081 --turbopack",
+    "build": "next build",
+    "start": "next start -p 8081",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@ant-design/cssinjs": "^1.24.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/lab": "^7.0.0-beta.14",
+    "@mui/material": "^7.2.0",
+    "antd": "^5.26.6",
+    "autoprefixer": "^10.4.21",
+    "axios": "^1.11.0",
+    "lucide-react": "^0.526.0",
+    "next": "15.4.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-icons": "^5.5.0",
+    "recharts": "^3.1.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "15.4.4",
+    "tailwindcss": "^4"
+  }
+}

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZK Proof Verifier</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ Zero-Knowledge Proof Verifier</h1>
+        </div>
+
+        <div class="main">
+            <div class="info-box">
+                <h3>📋 How to Use</h3>
+                <p>Upload the three files generated from your ZK proof: <strong>proof.json</strong>,
+                    <strong>public.json</strong>, and <strong>verification_key.json</strong>. Click verify to check if
+                    the proof is mathematically valid.</p>
+            </div>
+
+            <div class="upload-section">
+                <div class="upload-grid">
+                    <div class="file-upload" id="proof-upload">
+                        <input type="file" id="proof-file" accept=".json">
+                        <div class="file-upload-icon">📄</div>
+                        <h3>Proof</h3>
+                        <p>Upload proof.json</p>
+                    </div>
+
+                    <div class="file-upload" id="public-upload">
+                        <input type="file" id="public-file" accept=".json">
+                        <div class="file-upload-icon">🔢</div>
+                        <h3>Public Signals</h3>
+                        <p>Upload public.json</p>
+                    </div>
+
+                    <div class="file-upload" id="vkey-upload">
+                        <input type="file" id="vkey-file" accept=".json">
+                        <div class="file-upload-icon">🔑</div>
+                        <h3>Verification Key</h3>
+                        <p>Upload verification_key.json</p>
+                    </div>
+                </div>
+
+                <button class="verify-button" id="verify-btn" disabled>
+                    🔍 Verify ZK Proof
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Verifying proof... This may take a few moments.</p>
+            </div>
+
+            <div class="result-section" id="result-section">
+                <div class="result-icon" id="result-icon"></div>
+                <div class="result-title" id="result-title"></div>
+                <div class="result-message" id="result-message"></div>
+                <div class="public-signals" id="public-signals-display"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/snarkjs@latest/build/snarkjs.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

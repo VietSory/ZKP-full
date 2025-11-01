@@ -1,0 +1,16 @@
+[
+  {
+    "uid": 1,
+    "username": "hoangviet",
+    "password": "123456",
+    "walletAddress": "e0fed1164557a0e698bdbec19bd24feb9f18e7af164f182ba14152d16a815d89",
+    "balance": 370
+  },
+  {
+    "uid": 2,
+    "username": "hoangnam",
+    "password": "123456",
+    "walletAddress": "7956157a56e9922f0cd713a9ec8ae2d29b85863c08841f933d21a01c4dfa17dc",
+    "balance": 300
+  }
+]

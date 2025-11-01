@@ -1,0 +1,2 @@
+- Có thể xem như công cụ bên thứ 3 để verify bằng chứng ZKP download từ server
+- Tải lên 3 file JSON sàn cung cấp để verify

@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<script>
+    const API_BASE = "http://localhost:8080";
+</script>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Blockchain Wallet Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+
+<body>
+    <div class="container">
+        <!-- ======================== API SECTION ======================== -->
+        <div class="api-section">
+            <h2 class="section-title">Blockchain behavior simulation</h2>
+
+            <div class="cards-grid">
+                <!-- CREATE WALLET CARD -->
+                <div class="api-card">
+                    <div class="card-header">
+                        <div class="card-icon"></div>
+                        <h3 class="card-title">Create New Wallet</h3>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method post">POST</span> /api/wallet/create
+                    </div>
+
+                    <button class="btn-primary" onclick="createWallet()">
+                        <i class="fas fa-wallet"></i> Create Wallet
+                    </button>
+
+                    <div class="result" id="createWalletResult"></div>
+                </div>
+
+                <!-- GET WALLET INFO CARD -->
+                <div class="api-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h3 class="card-title">Get Wallet Info</h3>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span> /api/wallet/[address]
+                    </div>
+
+                    <form onsubmit="return getWalletInfo(event)">
+                        <div class="form-group">
+                            <label>Wallet Address</label>
+                            <input name="address" id="getWalletAddress" required
+                                placeholder="Enter wallet address..." />
+                        </div>
+                        <button class="btn-primary" type="submit">
+                            <i class="fas fa-info-circle"></i> Get Info
+                        </button>
+                    </form>
+
+                    <div class="result" id="getWalletResult"></div>
+                </div>
+
+                <!-- SEND TRANSACTION CARD -->
+                <div class="api-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                        <h3 class="card-title">Send Transaction</h3>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method post">POST</span> /api/transaction/send
+                    </div>
+
+                    <form onsubmit="return sendTransaction(event)">
+                        <div class="form-group">
+                            <label>From Address</label>
+                            <input name="from" required placeholder="Sender wallet address..." />
+                        </div>
+                        <div class="form-group">
+                            <label>To Address</label>
+                            <input name="to" required placeholder="Receiver wallet address..." />
+                        </div>
+                        <div class="form-group">
+                            <label>Amount</label>
+                            <input name="amount" type="number" step="0.01" required placeholder="0.00" />
+                        </div>
+                        <div class="form-group">
+                            <label for="privateKey">Private Key (PEM Format)</label>
+                            <textarea name="privateKey" required placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
+                        </div>
+                        <button class="btn-primary" type="submit">
+                            <i class="fas fa-send"></i> Send Transaction
+                        </button>
+                    </form>
+
+                    <div class="result" id="sendTxResult"></div>
+                </div>
+
+                <!-- TRANSACTION HISTORY CARD -->
+                <div class="api-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <h3 class="card-title">Transaction History</h3>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span> /api/transaction/[address]
+                    </div>
+
+                    <form onsubmit="return getTxHistory(event)">
+                        <div class="form-group">
+                            <label>Wallet Address</label>
+                            <input name="address" required placeholder="Enter wallet address..." />
+                        </div>
+                        <button class="btn-primary" type="submit">
+                            <i class="fas fa-list"></i> View History
+                        </button>
+                    </form>
+
+                    <div class="result" id="txHistoryResult"></div>
+                </div>
+
+                <!-- GET ADDRESS INFO CARD -->
+                <div class="api-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <h3 class="card-title">Get Address Info</h3>
+                    </div>
+
+                    <div class="endpoint">
+                        <span class="method get">GET</span> /api/address
+                    </div>
+
+                    <button class="btn-primary" onclick="getAddressInfo()">
+                        <i class="fas fa-globe"></i> Get Address Info
+                    </button>
+
+                    <div class="result" id="addressResult"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+
+<!-- ======================== JAVASCRIPT SECTION ======================== -->
+<script>
+    // Set loading state
+    function setLoading(resultId, isLoading) {
+        const resultDiv = document.getElementById(resultId);
+        if (isLoading) {
+            resultDiv.className = "result loading";
+            resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        } else {
+            resultDiv.className = "result";
+        }
+    }
+
+    // Add copy button to result
+    function addCopyButton(resultId, text) {
+        const resultDiv = document.getElementById(resultId);
+        let btn = document.createElement("button");
+        btn.className = "copy-btn";
+        btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+        btn.onclick = function () {
+            navigator.clipboard.writeText(text);
+            btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            setTimeout(
+                () => (btn.innerHTML = '<i class="fas fa-copy"></i> Copy'),
+                1500
+            );
+        };
+        resultDiv.appendChild(btn);
+    }
+
+    // Render API result
+    function renderResult(resultId, text) {
+        const resultDiv = document.getElementById(resultId);
+        resultDiv.innerHTML = "";
+
+        try {
+            const data = JSON.parse(text);
+
+            // If it's transaction array, render as table
+            if (Array.isArray(data) && data.length && data[0].from && data[0].to) {
+                let html =
+                    '<table class="tx-table"><thead><tr><th>From</th><th>To</th><th>Amount</th><th>Timestamp</th></tr></thead><tbody>';
+                for (const tx of data) {
+                    html += `<tr>
+              <td title="${tx.from}">${tx.from}</td>
+              <td title="${tx.to}">${tx.to}</td>
+              <td>${tx.amount ?? ""}</td>
+              <td>${tx.timestamp ? new Date(tx.timestamp).toLocaleString() : ""
+                        }</td>
+            </tr>`;
+                }
+                html += "</tbody></table>";
+                resultDiv.innerHTML = html;
+                addCopyButton(resultId, text);
+                return;
+            }
+
+            // If it's an object, render as formatted JSON
+            const jsonContent = JSON.stringify(data, null, 2);
+            resultDiv.innerHTML = `<pre  class="json-content">${jsonContent}</pre>`;
+            addCopyButton(resultId, text);
+            return;
+        } catch { }
+
+        // If it's plain text
+        resultDiv.innerHTML = `<pre  class="json-content">${text}</pre>`;
+        addCopyButton(resultId, text);
+    }
+
+    // Create wallet function
+    async function createWallet() {
+        setLoading("createWalletResult", true);
+        try {
+            const res = await fetch(API_BASE + "/api/wallet/create", {
+                method: "POST",
+            });
+            let text = await res.text();
+            renderResult("createWalletResult", text);
+        } catch (err) {
+            document.getElementById("createWalletResult").innerHTML =
+                '<span style="color:#dc2626;"><i class="fas fa-exclamation-triangle"></i> Error: ' +
+                err +
+                "</span>";
+        }
+    }
+
+    // Get wallet info function
+    async function getWalletInfo(e) {
+        e.preventDefault();
+        const address = document.getElementById("getWalletAddress").value.trim();
+        setLoading("getWalletResult", true);
+
+        try {
+            const res = await fetch(API_BASE + "/api/wallet/" + address);
+            let text = await res.text();
+            renderResult("getWalletResult", text);
+        } catch (err) {
+            document.getElementById("getWalletResult").innerHTML =
+                '<span style="color:#dc2626;"><i class="fas fa-exclamation-triangle"></i> Error: ' +
+                err +
+                "</span>";
+        }
+        return false;
+    }
+
+    // Send transaction function
+    async function sendTransaction(e) {
+        e.preventDefault();
+        const form = e.target;
+        const data = {
+            from: form.from.value.trim(),
+            to: form.to.value.trim(),
+            amount: Number(form.amount.value),
+            privateKey: form.privateKey.value.replace(/\\n/g, '\n').trim(),
+        };
+
+        setLoading("sendTxResult", true);
+        try {
+            const res = await fetch(API_BASE + "/api/transaction/send", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            let text = await res.text();
+            renderResult("sendTxResult", text);
+        } catch (err) {
+            document.getElementById("sendTxResult").innerHTML =
+                '<span style="color:#dc2626;"><i class="fas fa-exclamation-triangle"></i> Error: ' +
+                err +
+                "</span>";
+        }
+        return false;
+    }
+
+    // Get transaction history function
+    async function getTxHistory(e) {
+        e.preventDefault();
+        const address = e.target.address.value.trim();
+        setLoading("txHistoryResult", true);
+
+        try {
+            const res = await fetch(API_BASE + "/api/transaction/" + address);
+            let text = await res.text();
+            renderResult("txHistoryResult", text);
+        } catch (err) {
+            document.getElementById("txHistoryResult").innerHTML =
+                '<span style="color:#dc2626;"><i class="fas fa-exclamation-triangle"></i> Error: ' +
+                err +
+                "</span>";
+        }
+        return false;
+    }
+
+    // Get address info function
+    async function getAddressInfo() {
+        setLoading("addressResult", true);
+        try {
+            const res = await fetch(API_BASE + "/api/address");
+            let text = await res.text();
+            renderResult("addressResult", text);
+        } catch (err) {
+            document.getElementById("addressResult").innerHTML =
+                '<span style="color:#dc2626;"><i class="fas fa-exclamation-triangle"></i> Error: ' +
+                err +
+                "</span>";
+        }
+    }
+</script>
+
+<style>
+    /* ======================== RESET & BASE STYLES ======================== */
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: radial-gradient(ellipse at top, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        line-height: 1.6;
+        color: #333;
+    }
+
+    /* ======================== HEADER STYLES ======================== */
+    .header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 25px 0;
+        top: 0;
+        z-index: 100;
+    }
+
+    .header h1 {
+        color: #fff;
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: 800;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        letter-spacing: -1px;
+        margin-bottom: 8px;
+    }
+
+    .header .subtitle {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.1rem;
+        font-weight: 300;
+    }
+
+    /* ======================== CONTAINER & GRID ======================== */
+    .container {
+        max-width: 90%;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+
+    /* ======================== STATS SECTION ======================== */
+    .stats-section {
+        margin-bottom: 40px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .stat-card {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 25px;
+        border-radius: 16px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+
+    .stat-number {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #667eea;
+        margin-bottom: 8px;
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* ======================== API CARDS SECTION ======================== */
+    .api-section {
+        margin-top: 40px;
+    }
+
+    .section-title {
+        color: #fff;
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 25px;
+        text-align: center;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+        gap: 30px;
+    }
+
+    .api-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 35px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .api-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    }
+
+    /* ======================== CARD HEADER ======================== */
+    .card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+
+    .card-icon {
+        width: 55px;
+        height: 55px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.6rem;
+        margin-right: 18px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    .card-icon::before {
+        content: "_";
+        display: block;
+    }
+
+    .card-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2d3748;
+    }
+
+    /* ======================== ENDPOINT INFO ======================== */
+    .endpoint {
+        background: #f8fafc;
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-family: "Monaco", "Consolas", monospace;
+        font-size: 14px;
+        margin-bottom: 20px;
+        border-left: 4px solid #667eea;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .method {
+        font-weight: bold;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        margin-right: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .method.post {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .method.get {
+        background: #dcfce7;
+        color: #10b981;
+    }
+
+    /* ======================== FORM ELEMENTS ======================== */
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #374151;
+        font-size: 14px;
+    }
+
+    input,
+    textarea {
+        width: 100%;
+        padding: 14px 18px;
+        border-radius: 12px;
+        border: 2px solid #e5e7eb;
+        font-size: 14px;
+        background: #f9fafb;
+        transition: all 0.3s ease;
+        font-family: inherit;
+    }
+
+    input:focus,
+    textarea:focus {
+        border-color: #667eea;
+        outline: none;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        transform: translateY(-1px);
+    }
+
+    textarea {
+        resize: vertical;
+        min-height: 100px;
+        font-family: "Monaco", "Consolas", monospace;
+        font-size: 13px;
+    }
+
+    /* ======================== BUTTONS ======================== */
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border: none;
+        padding: 14px 1.2em;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        min-width: 40%;
+        margin-left: auto;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:active {
+        transform: translateY(-1px);
+    }
+
+    /* ======================== RESULT SECTION ======================== */
+    .result {
+        background: lightgray;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+        min-height: 50px;
+        position: relative;
+        border: 1px solid #e5e7eb;
+        font-family: "Monaco", "Consolas", monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        max-height: 500px;
+        overflow-y: auto;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+    }
+
+    .copy-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 500;
+        z-index: 10;
+    }
+
+    .copy-btn:hover {
+        background: #667eea;
+        color: #fff;
+        transform: scale(1.05);
+    }
+
+    /* ======================== JSON DISPLAY ======================== */
+    .result pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
+    }
+
+    .result .json-content {
+        max-width: 100%;
+        overflow-wrap: break-word;
+        word-break: break-all;
+        height: fit-content;
+    }
+
+    /* ======================== TABLE STYLES ======================== */
+    .tx-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        background: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .tx-table th,
+    .tx-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .tx-table th {
+        background: #667eea;
+        color: #fff;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .tx-table td {
+        font-size: 12px;
+        word-break: break-all;
+    }
+
+    .tx-table tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
+    .tx-table tr:hover {
+        background: #e0e7ff;
+    }
+
+    /* ======================== RESPONSIVE ======================== */
+    @media (max-width: 768px) {
+        .container {
+            padding: 15px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+        }
+
+        .cards-grid {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .api-card {
+            padding: 25px;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .result {
+            max-height: 300px;
+            font-size: 12px;
+            padding: 15px;
+        }
+
+        .tx-table {
+            font-size: 11px;
+        }
+
+        .tx-table th,
+        .tx-table td {
+            padding: 8px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .card-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .card-icon {
+            margin-right: 0;
+        }
+
+        .result {
+            max-height: 250px;
+            font-size: 11px;
+            padding: 12px;
+        }
+
+        .copy-btn {
+            position: static;
+            margin-top: 10px;
+            display: block;
+            width: 100%;
+        }
+    }
+</style>

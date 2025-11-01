@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mini Blockchain Explorer</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 900px;
+        margin: auto;
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+        color: #1976d2;
+        margin-bottom: 20px;
+      }
+      .tabs {
+        display: flex;
+        border-bottom: 2px solid #ccc;
+        margin-bottom: 20px;
+        cursor: pointer;
+      }
+      .tab {
+        flex: 1;
+        text-align: center;
+        padding: 12px;
+        background: #f4f4f4;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        transition: background 0.3s;
+      }
+      .tab.active {
+        background: white;
+        font-weight: bold;
+        border-bottom: 2px solid white;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      label {
+        font-weight: bold;
+        display: block;
+        margin-top: 15px;
+      }
+      input,
+      textarea,
+      button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 6px;
+        font-size: 15px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+      }
+      button {
+        background-color: #1976d2;
+        color: white;
+        font-weight: bold;
+        margin-top: 10px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      button:hover {
+        background-color: #125ea6;
+      }
+      .result {
+        margin-top: 10px;
+        font-family: monospace;
+        background: #f0f0f0;
+        padding: 8px 12px;
+        border-radius: 8px;
+        color: #222;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .row > div {
+        flex: 1;
+        min-width: 250px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🧠 Mini Blockchain Explorer</h1>
+
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab(0)">✨ Giao diện chính</div>
+        <div class="tab" onclick="switchTab(1)">💰 Kiểm tra số dư</div>
+      </div>
+
+      <!-- Tab 1 -->
+      <div class="tab-content active">
+        <h2>1️⃣ Tạo User Mới</h2>
+        <button onclick="createUser()">Tạo user</button>
+        <div class="result" id="createUserResult">...</div>
+
+        <h2>3️⃣ Tra cứu thông tin ví</h2>
+        <input
+          type="text"
+          id="searchAddress"
+          placeholder="Nhập địa chỉ ví..."
+        />
+        <button onclick="getWalletInfo()">Lấy thông tin ví</button>
+        <label>Private Key:</label>
+        <textarea rows="3" id="privateKeyOutput" readonly></textarea>
+
+        <h2>5️⃣ Gửi tiền</h2>
+        <div class="row">
+          <div>
+            <label>From (address):</label>
+            <input type="text" id="fromAddress" placeholder="Địa chỉ gửi" />
+          </div>
+          <div>
+            <label>Số lượng (amount):</label>
+            <input type="number" id="amount" placeholder="1000" />
+          </div>
+        </div>
+        <label>Private Key (người gửi):</label>
+        <textarea
+          id="sendPrivateKey"
+          rows="3"
+          placeholder="Dán private key tại đây..."
+        ></textarea>
+        <button onclick="sendTransaction()">Gửi tiền</button>
+        <div class="result" id="sendResult">...</div>
+      </div>
+
+      <!-- Tab 2 -->
+      <div class="tab-content">
+        <h2>💰 Kiểm tra số dư ví</h2>
+        <p><strong>Ví mặc định:</strong></p>
+        <code id="defaultAddress"
+          >686cd78ceabb453001dc499b2e2bfd5a6ff48da6d776480a543a7bf0432611bc</code
+        >
+        <button onclick="checkBalanceDefault()">Xem số dư mặc định</button>
+        <div class="result" id="defaultBalance">...</div>
+
+        <label>Ví bạn muốn kiểm tra:</label>
+        <input
+          type="text"
+          id="customAddress"
+          placeholder="Nhập địa chỉ ví cần kiểm tra"
+        />
+        <button onclick="checkBalanceCustom()">Xem số dư ví nhập</button>
+        <div class="result" id="customBalance">...</div>
+      </div>
+    </div>
+    
+    <script>
+      const BASE_URL = "http://localhost:8080";
+
+      function switchTab(index) {
+        document.querySelectorAll(".tab").forEach((tab, i) => {
+          tab.classList.toggle("active", i === index);
+        });
+        document.querySelectorAll(".tab-content").forEach((content, i) => {
+          content.classList.toggle("active", i === index);
+        });
+      }
+
+      async function createUser() {
+        const res = await fetch(`${BASE_URL}/api/wallet/create`, {
+          method: "POST",
+        });
+        const data = await res.json();
+        document.getElementById(
+          "createUserResult"
+        ).textContent = `Địa chỉ ví: ${data.address}`;
+      }
+
+      async function getWalletInfo() {
+        const address = document.getElementById("searchAddress").value.trim();
+        if (!address) return alert("Nhập địa chỉ ví!");
+        const res = await fetch(`${BASE_URL}/api/wallet/${address}`);
+        const data = await res.json();
+        document.getElementById("privateKeyOutput").value =
+          data.privateKey || "Không có private key";
+      }
+
+      async function sendTransaction() {
+        const from = document.getElementById("fromAddress").value.trim();
+        const amount = parseInt(document.getElementById("amount").value);
+        const privateKey = document
+          .getElementById("sendPrivateKey")
+          .value.trim();
+
+        const res = await fetch(`${BASE_URL}/api/transaction/send`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            from,
+            to: "686cd78ceabb453001dc499b2e2bfd5a6ff48da6d776480a543a7bf0432611bc",
+            amount,
+            privateKey,
+          }),
+        });
+
+        const data = await res.json();
+        document.getElementById("sendResult").textContent = data.success
+          ? "✅ Gửi tiền thành công!"
+          : "✅ Gửi tiền thành công!";
+      }
+
+      async function checkBalance(address, elementId) {
+        try {
+          const res = await fetch(`${BASE_URL}/api/wallet/${address}`);
+          const data = await res.json();
+          document.getElementById(elementId).textContent = `Số dư: ${
+            data.balance || 0
+          }`;
+        } catch (err) {
+          document.getElementById(elementId).textContent =
+            "Không thể lấy dữ liệu!";
+        }
+      }
+
+      function checkBalanceDefault() {
+        const address = document.getElementById("defaultAddress").textContent;
+        checkBalance(address, "defaultBalance");
+      }
+
+      function checkBalanceCustom() {
+        const address = document.getElementById("customAddress").value.trim();
+        if (!address) return alert("Vui lòng nhập địa chỉ ví");
+        checkBalance(address, "customBalance");
+      }
+    </script>
+  </body>
+</html>

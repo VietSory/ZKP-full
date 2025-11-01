@@ -1,0 +1,7 @@
+{
+  "exchangeWalletAddress": "22e23d1519ce3063c2f66cb024985f90bafe748c550264fc951c9190a1a11075",
+  "PK": "-----BEGIN PRIVATE KEY-----\nMIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQgZToUPk+6QW+WJF3sAgEk\nLQcjRVt2/FgCEtlCf65bbVWhRANCAAQ5jgx3vLuWwodmYfiu6I2m7tMdu6f6UfhM\njSzooCHxTS8itaO59JgJUzq13kgdTTx7RkWwhcUYeaULpWAdm85j\n-----END PRIVATE KEY-----\n",
+  "newestDepositID": "68d96d2f55f1abaf3087ee7b",
+  "blockchainApiUrl": "http://localhost:8080/api/transaction/22e23d1519ce3063c2f66cb024985f90bafe748c550264fc951c9190a1a11075",
+  "TRANSACTION_API_URL": "http://localhost:8080/api/transaction/send/"
+}

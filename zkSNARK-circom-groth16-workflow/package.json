@@ -1,0 +1,12 @@
+{
+	"name": "circom-compiler",
+	"version": "1.0.0",
+	"main": "index.js",
+	"dependencies": {
+		"circomlibjs": "^0.1.7",
+		"cors": "^2.8.5",
+		"express": "^4.17.1",
+		"express-session": "^1.18.2",
+		"node-fetch": "^2.6.7"
+	}
+}

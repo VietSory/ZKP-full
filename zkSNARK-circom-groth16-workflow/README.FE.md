@@ -1,0 +1,1 @@
+Since the system's frontend is built using a framework, the source code includes quite a lot of scattered files. Therefore, our submitted repository contains only the backend API, and the frontend has been uploaded to this repository: https://github.com/ThanggA7/miniblockchainfe/tree/master
